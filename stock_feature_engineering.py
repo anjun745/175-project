@@ -60,10 +60,10 @@ avg_loss = df.groupby('Name')['loss'].rolling(window=14, min_periods=1).mean().r
 rs = avg_gain / avg_loss
 df['rsi'] = 100 - (100 / (1 + rs))
 
-#Stochastic Oscillator
-L14 = grouped['close'].transform(lambda x: x.rolling(window=14, min_periods=1).min())
-H14 = grouped['close'].transform(lambda x: x.rolling(window=14, min_periods=1).max())
-df['stochastic_oscillator'] = ((df['close'] - L14) / (H14 - L14)) * 100
+# Stochastic Oscillator
+df['L14'] = df.groupby('Name')['low'].rolling(window=14, min_periods=1).min().reset_index(level=0, drop=True)
+df['H14'] = df.groupby('Name')['high'].rolling(window=14, min_periods=1).max().reset_index(level=0, drop=True)
+df['stochastic_oscillator'] = ((df['close'] - df['L14']) / (df['H14'] - df['L14'])) * 100
 
 # ATR (Average True Range, used to calculate volatility) over 14 days
 # True Range (could be useful for other calcs)
@@ -79,7 +79,7 @@ tr3 = np.abs(df['low'] - df['prev_close'])
 df['true_range'] = np.maximum.reduce([tr1, tr2, tr3])
 
 # ATR (Average True Range)
-df['atr'] = df.groupby('Name')['true_range'].transform(lambda x: x.rolling(window=14, min_periods=1).mean())
+df['atr'] = df.groupby('Name')['true_range'].transform(lambda x: x.ewm(alpha=1/14, adjust=False).mean())
 
 # ADX (Average Directional Index), used to calculate strength and direction of the index over 14 days
 # Directional Movement (DM) calculations
