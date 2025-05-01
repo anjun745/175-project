@@ -45,9 +45,9 @@ df['macd']    = ema12_ret - ema26_ret
 # MACD SIGNAL LINE
 df['macd_signal'] = df['macd'].ewm(span=9, adjust=False).mean()
 
-"""======Amelie's Section=========="""
+"""===================Amelie's Section========================================"""
 # CUMULATIVE RETURN
-"""first_close = df['close'].iloc[0]
+first_close = df['close'].iloc[0]
 df['cumulative_return'] = ((df['close'] - first_close) / first_close) * 100
 
 # Gain and Loss - Note: This might take up a lot of space so I'm not sure if you want to keep these columns or not
@@ -58,7 +58,47 @@ df['loss'] = df['daily_return'].apply(lambda x: -x if x < 0 else 0)
 avg_gain = df.groupby('Name')['gain'].rolling(window=14, min_periods=1).mean().reset_index(level=0, drop=True)
 avg_loss = df.groupby('Name')['loss'].rolling(window=14, min_periods=1).mean().reset_index(level=0, drop=True)
 rs = avg_gain / avg_loss
-df['rsi'] = 100 - (100 / (1 + rs))"""
+df['rsi'] = 100 - (100 / (1 + rs))
+
+#Stochastic Oscillator
+L14 = grouped['close'].transform(lambda x: x.rolling(window=14, min_periods=1).min())
+H14 = grouped['close'].transform(lambda x: x.rolling(window=14, min_periods=1).max())
+df['stochastic_oscillator'] = ((df['close'] - L14) / (H14 - L14)) * 100
+
+# ATR (Average True Range, used to calculate volatility) over 14 days
+# True Range (could be useful for other calcs)
+# Shift the data to get previous day's values
+df['prev_high'] = df.groupby('Name')['high'].shift(1)
+df['prev_low'] = df.groupby('Name')['low'].shift(1)
+df['prev_close'] = df.groupby('Name')['close'].shift(1)
+
+tr1 = df['high'] - df['low']
+tr2 = np.abs(df['high'] - df['prev_close'])
+tr3 = np.abs(df['low'] - df['prev_close'])
+
+df['true_range'] = np.maximum.reduce([tr1, tr2, tr3])
+
+# ATR (Average True Range)
+df['atr'] = df.groupby('Name')['true_range'].transform(lambda x: x.rolling(window=14, min_periods=1).mean())
+
+# ADX (Average Directional Index), used to calculate strength and direction of the index over 14 days
+# Directional Movement (DM) calculations
+df['plus_dir'] = df['high'] - df['prev_high']
+df['minus_dir'] = df['prev_low'] - df['low']
+
+# Only keep positive directional movement
+df['plus_dm'] = np.where((df['plus_dir'] > df['minus_dir']) & (df['plus_dir'] > 0), df['plus_dir'], 0)
+df['minus_dm'] = np.where((df['minus_dir'] > df['plus_dir']) & (df['minus_dir'] > 0), df['minus_dir'], 0)
+
+# Smooth +DM and -DM over 14 periods per stock
+df['smoothed_plus_dm'] = df.groupby('Name')['plus_dm'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
+df['smoothed_minus_dm'] = df.groupby('Name')['minus_dm'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
+
+# Calculate DX
+df['dx'] = (np.abs(df['smoothed_plus_dm'] - df['smoothed_minus_dm']) / np.abs((df['smoothed_plus_dm'] + df['smoothed_minus_dm']))) * 100
+
+# Calculate ADX (14-period smoothing of DX)
+df['adx'] = df.groupby('Name')['dx'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
 
 # Output to new CSV
 df.to_csv(OUTPUT_CSV, index=False)
