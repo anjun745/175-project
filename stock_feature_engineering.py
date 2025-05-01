@@ -45,6 +45,21 @@ df['macd']    = ema12_ret - ema26_ret
 # MACD SIGNAL LINE
 df['macd_signal'] = df['macd'].ewm(span=9, adjust=False).mean()
 
+# CUMULATIVE RETURN
+first_close = df['close'].iloc[0]
+df['cumulative_return'] = ((df['close'] - first_close) / first_close) * 100
+
+"""======Amelie's Section=========="""
+# Gain and Loss - Note: This might take up a lot of space so I'm not sure if you want to keep these columns or not
+df['gain'] = df['daily_return'].apply(lambda x: x if x > 0 else 0)
+df['loss'] = df['daily_return'].apply(lambda x: -x if x < 0 else 0)
+
+# RSI
+avg_gain = df.groupby('Name')['gain'].rolling(window=14, min_periods=1).mean().reset_index(level=0, drop=True)
+avg_loss = df.groupby('Name')['loss'].rolling(window=14, min_periods=1).mean().reset_index(level=0, drop=True)
+rs = avg_gain / avg_loss
+df['rsi'] = 100 - (100 / (1 + rs))
+
 # Output to new CSV
 df.to_csv(OUTPUT_CSV, index=False)
 print(f"Wrote indicators to {OUTPUT_CSV}")
