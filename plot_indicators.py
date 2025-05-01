@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# This file plots individial tickers 
+# Change code at bottom to olot using ticker name and dates
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ def plot_candlestick_with_indicators(csv_file, symbol, start_date, end_date):
 if __name__ == '__main__':
     # ─── User parameters ───────────────────────
     CSV_FILE   = 'stocks_with_indicators.csv'
-    SYMBOL     = 'XRX'                   
+    SYMBOL     = 'MSFT'                   
     START_DATE = '2013-02-08'
     END_DATE   = '2018-02-07'
     # ───────────────────────────────────────────
