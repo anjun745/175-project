@@ -49,7 +49,7 @@ df['macd_signal'] = df['macd'].ewm(span=9, adjust=False).mean()
 """===================Amelie's Section========================================"""
 # CUMULATIVE RETURN
 first_close = df['close'].iloc[0]
-df['cumulative_return'] = ((df['close'] - first_close) / first_close) * 100
+df['cumulative_return'] = df.groupby('Name').apply(lambda g: ((g['close'] - g['close'].iloc[0]) / g['close'].iloc[0]) * 100).reset_index(level=0, drop=True)
 
 # Gain and Loss - Note: This might take up a lot of space so I'm not sure if you want to keep these columns or not
 df['gain'] = df['daily_return'].apply(lambda x: x if x > 0 else 0)
@@ -94,6 +94,9 @@ df['minus_dm'] = np.where((df['minus_dir'] > df['plus_dir']) & (df['minus_dir'] 
 # Smooth +DM and -DM over 14 periods per stock
 df['smoothed_plus_dm'] = df.groupby('Name')['plus_dm'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
 df['smoothed_minus_dm'] = df.groupby('Name')['minus_dm'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
+
+df['smoothed_plus_dm'] = (df['smoothed_plus_dm'] / df['atr']) * 100
+df['smoothed_minus_dm'] = (df['smoothed_minus_dm'] / df['atr']) * 100
 
 # Calculate DX
 df['dx'] = (np.abs(df['smoothed_plus_dm'] - df['smoothed_minus_dm']) / np.abs((df['smoothed_plus_dm'] + df['smoothed_minus_dm']))) * 100
