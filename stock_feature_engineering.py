@@ -12,6 +12,7 @@
 # MACD: The moving average convergence divergence, calculated from a 12-day EMA and a 26-day EMA of Close % Change. 
 # This feature is another popular technical indicator that measures the trend and momentum of an asset.
 
+import numpy as np
 import pandas as pd
 
 INPUT_CSV   = 'all_stocks_5yr.csv'
