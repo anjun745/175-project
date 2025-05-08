@@ -1,7 +1,7 @@
 # This file calculates 5 techincal feature:
 # Daily Variation: The difference between the High and Low columns, divided by the Open column. This feature represents the volatility of the index on that day.
 
-# Daily Return: The percentage change in the Close column from the previous day’s Close column. This feature represents the performance of the index on that day.
+# Daily Return: The percentage change in the Close column from the previous day's Close column. This feature represents the performance of the index on that day.
 
 # 7-Day SMA: The 7-day simple moving average of the Close column. This feature represents the short-term trend of the index.
 
@@ -31,12 +31,12 @@ df['daily_variation'] = (df['high'] - df['low']) / df['open']
 # % change in Close from prior day
 df['daily_return'] = grouped['close'].transform(lambda x: x.pct_change())
 
-# 7-DAY SMA & STD
-df['sma_7'] = grouped['close'].transform(lambda x: x.rolling(window=7).mean())
-df['std_7'] = grouped['close'].transform(lambda x: x.rolling(window=7).std())
+# 5-DAY SMA & STD (approximately 1 trading week)
+df['sma_7'] = grouped['close'].transform(lambda x: x.rolling(window=5).mean())
+df['std_7'] = grouped['close'].transform(lambda x: x.rolling(window=5).std())
 
-# 14-DAY EMA
-df['ema_14'] = grouped['close'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
+# 10-DAY EMA (approximately 2 trading weeks)
+df['ema_14'] = grouped['close'].transform(lambda x: x.ewm(span=10, adjust=False).mean())
 
 # MACD ON %-CHANGE
 ema12_ret = grouped['daily_return'].transform(lambda x: x.ewm(span=12, adjust=False).mean())
@@ -103,6 +103,26 @@ df['dx'] = (np.abs(df['smoothed_plus_dm'] - df['smoothed_minus_dm']) / np.abs((d
 
 # Calculate ADX (14-period smoothing of DX)
 df['adx'] = df.groupby('Name')['dx'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
+
+# 3 and 7 day BUY, HOLD, SELL tags
+# Calculate future returns using trading days (approximately 5 trading days per week)
+df['future_return_3'] = df.groupby('Name')['close'].transform(lambda x: x.shift(-3) / x - 1)  # 3 trading days
+df['future_return_7'] = df.groupby('Name')['close'].transform(lambda x: x.shift(-5) / x - 1)  # 5 trading days (approximately 1 week)
+
+# Use FUTURE return
+def create_label(return_value):
+    if return_value > 0.03:  # 3% threshold
+        return 'buy'
+    elif return_value < -0.03:  # -3% threshold
+        return 'sell'
+    else:
+        return 'hold'
+
+df['label_3'] = df['future_return_3'].apply(create_label)
+df['label_7'] = df['future_return_7'].apply(create_label)
+
+# Drop future return columns
+df = df.drop(['future_return_3', 'future_return_7'], axis=1)
 
 # Output to new CSV
 df.to_csv(OUTPUT_CSV, index=False)
