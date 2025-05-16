@@ -104,6 +104,10 @@ df['dx'] = (np.abs(df['smoothed_plus_dm'] - df['smoothed_minus_dm']) / np.abs((d
 # Calculate ADX (14-period smoothing of DX)
 df['adx'] = df.groupby('Name')['dx'].transform(lambda x: x.ewm(span=14, adjust=False).mean())
 
+# Actual price 3 and 7 days out
+df['future_price_3'] = df.groupby('Name')['close'].shift(periods=-3)
+df['future_price_7'] = df.groupby('Name')['close'].shift(periods=-5)
+
 # 3 and 7 day BUY, HOLD, SELL tags
 # Calculate future returns using trading days (approximately 5 trading days per week)
 df['future_return_3'] = df.groupby('Name')['close'].transform(lambda x: x.shift(-3) / x - 1)  # 3 trading days
