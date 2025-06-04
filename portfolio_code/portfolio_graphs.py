@@ -24,10 +24,10 @@ xg7_strategies = [
     'nn3_entry_open_exit_close',
     'nn3_entry_close_exit_open',
     'nn3_entry_close_exit_close',
-    'xg7_entry_open_exit_open',
-    'xg7_entry_open_exit_close',
-    'xg7_entry_close_exit_open',
-    'xg7_entry_close_exit_close'
+    'xg3_entry_open_exit_open',
+    'xg3_entry_open_exit_close',
+    'xg3_entry_close_exit_open',
+    'xg3_entry_close_exit_close'
 ]
 
 df_trades_xg7 = df_trades[df_trades['strategy'].isin(xg7_strategies)].copy()

@@ -17,9 +17,8 @@ num_stocks = len(unique_stocks)
 portfolio_size = 1_000_000.0
 stock_budget = portfolio_size / num_stocks
 
-# Each trade is 10% of that stock’s budget
-trade_size = 0.10 * stock_budget
-
+# Each trade is 20% of that stock's budget
+trade_size = 0.20 * stock_budget
 
 out_dir = 'portfolio_details'
 os.makedirs(out_dir, exist_ok=True)
@@ -31,6 +30,9 @@ summary_rows = []
 # Simulate trades
 
 def simulate_and_record_exit_on_sell(model_col: str):
+    # Initialize remaining budget for each stock
+    remaining_budget = {stock: stock_budget for stock in unique_stocks}
+    
     for entry_type in ['open', 'close']:
         for exit_type in ['open', 'close']:
             strategy_name = f"{model_col}_entry_{entry_type}_exit_{exit_type}"
@@ -52,6 +54,10 @@ def simulate_and_record_exit_on_sell(model_col: str):
                     if pd.isna(row_i[entry_type]):
                         continue
                     entry_price = float(row_i[entry_type])
+
+                    # Check if we have enough remaining budget for this trade
+                    if remaining_budget[stock] < trade_size:
+                        continue
 
                     # Determine how many shares can be bought
                     shares = int(np.floor(trade_size / entry_price))
@@ -86,6 +92,9 @@ def simulate_and_record_exit_on_sell(model_col: str):
                     # Profit for a long position
                     profit = shares * (exit_price - entry_price)
 
+                    # Update remaining budget
+                    remaining_budget[stock] -= trade_size
+
                     # Record the trade
                     records.append({
                         'strategy':    strategy_name,
@@ -110,10 +119,9 @@ def simulate_and_record_exit_on_sell(model_col: str):
                 'num_trades':   int(total_trades)
             })
 
-
 # Run for all models
 all_model_cols = [
-    'xg3', 'log3', 'xg7', 'log7','nn3', 'nn7'
+    'xg3', 'xg7', 'nn3', 'nn7'
 ]
 
 for mc in all_model_cols:
@@ -130,7 +138,6 @@ trade_df.to_csv(trade_list_csv, index=False)
 print(f"→ Wrote {len(trade_df)} trades to '{trade_list_csv}'")
 
 # Summary table
-
 summary_df = pd.DataFrame(summary_rows, columns=['strategy', 'total_profit', 'num_trades'])
 print(f"\nNumber of unique tickers: {num_stocks}\n")
 print(summary_df.to_string(index=False))
